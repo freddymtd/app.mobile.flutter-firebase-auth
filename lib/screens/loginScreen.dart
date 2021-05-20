@@ -1,7 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:uber_firebase/main.dart';
+import 'package:uber_firebase/screens/homeScreen.dart';
 import 'package:uber_firebase/screens/registerScreen.dart';
 
 class LoginScreen extends StatelessWidget {
+  final TextEditingController emailTextEditingController =
+      TextEditingController();
+  final TextEditingController passwordTextEditingController =
+      TextEditingController();
   static const String idScreen = "login";
   @override
   Widget build(BuildContext context) {
@@ -20,6 +28,7 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               TextField(
+                controller: emailTextEditingController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: "Email",
@@ -32,6 +41,7 @@ class LoginScreen extends StatelessWidget {
               ),
               SizedBox(height: 24),
               TextField(
+                controller: passwordTextEditingController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: "Passaword",
@@ -48,7 +58,16 @@ class LoginScreen extends StatelessWidget {
                   child: Text("Sing In"),
                   padding: const EdgeInsets.symmetric(horizontal: 100),
                 ),
-                onPressed: () => print("object"),
+                onPressed: () {
+                  if (!emailTextEditingController.text.contains("@")) {
+                    displayToastMessage(
+                        "O endereço de e-mail não é válido", context);
+                  } else if (passwordTextEditingController.text.isEmpty) {
+                    displayToastMessage("A senha é obrigatório", context);
+                  } else {
+                    loginAndAuthenticateUser(context);
+                  }
+                },
               ),
               TextButton(
                   child: Text(
@@ -63,5 +82,33 @@ class LoginScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  void loginAndAuthenticateUser(BuildContext context) async {
+    final User firebaseUser = (await _firebaseAuth
+            .signInWithEmailAndPassword(
+                email: emailTextEditingController.text,
+                password: passwordTextEditingController.text)
+            .catchError((errorMsg) {
+      displayToastMessage("Error: " + errorMsg.toString(), context);
+    }))
+        .user;
+
+    if (firebaseUser != null) {
+      userRef.child(firebaseUser.uid).once().then((DataSnapshot snapshot) {
+        if (snapshot.value != null) {
+          Navigator.pushNamedAndRemoveUntil(
+              context, HomeScreen.idScreen, (route) => false);
+          displayToastMessage("Logado com sucesso", context);
+        } else {
+          _firebaseAuth.signOut();
+          displayToastMessage(
+              "Usuário não registrado, Por favor crie uma conta", context);
+        }
+      });
+    } else {
+      displayToastMessage("Erro não login não realizado", context);
+    }
   }
 }

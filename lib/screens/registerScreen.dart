@@ -106,7 +106,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         "O número de contato é obrigatório", context);
                   } else if (passwordTextEditingController.text.length < 6) {
                     displayToastMessage(
-                        "O número de password é obrigatório", context);
+                        "A senha é obrigatório ter no mínimo 5 caracteres",
+                        context);
                   } else {
                     registerNewUser(context);
                   }
